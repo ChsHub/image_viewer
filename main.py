@@ -1,10 +1,11 @@
-from tkinter import Tk, RIGHT, BOTH, Label, W, TOP, NO
+from tkinter import Tk, RIGHT, BOTH, Label, W, TOP, NO, Frame, YES, N, E, S, BOTH
 from tkinter.filedialog import askdirectory
 from tkinter.font import Font
+from tkinter import Button
 
 from PIL import Image, ImageTk
 from PIL.Image import BICUBIC
-from standard_view.standard_button import StandardButton
+from standard_view.colors import color_button
 from standard_view.standard_frame import StandardFrame
 from utility.os_interface import get_dir_list, exists
 from utility.path_str import get_full_path
@@ -18,6 +19,7 @@ class Window:
     path = None
     pictures = None
     index = None
+    button_width=90
 
     def __init__(self):
 
@@ -30,19 +32,21 @@ class Window:
         self._root.bind("<Left>", lambda x: self.prev_image())
         self._root.bind("<Escape>", lambda x: self.quit())
 
-        screen_width = self._root.winfo_screenwidth()
+        self.screen_width = self._root.winfo_screenwidth()-self.button_width
         self.screen_height = self._root.winfo_screenheight()
 
         helv36 = Font(family='Helvetica', size=36)
-        button_height = int(self.screen_height / 5 / 72)
-        button_width = int(screen_width / 10 / 36)
-        col = StandardFrame(self._root, RIGHT, expand=NO, padx=0, pady=0)
-        StandardButton("✕", col, self.quit, side=TOP, height=button_height, font=helv36, width=button_width)
-        StandardButton("⟲", col, self.flip, side=TOP, height=button_height, font=helv36, width=button_width)
-        StandardButton("⧐", col, self.next_image, side=TOP, height=button_height, font=helv36, width=button_width)
-        StandardButton("⧏", col, self.prev_image, side=TOP, height=button_height, font=helv36, width=button_width)
-        StandardButton("Open", col, self.open, side=TOP, height=button_height, font=helv36, width=button_width)
+        col = Frame(self._root, padx=0, pady=0, height=self.screen_height, width= 10, bg="#000000")
+        col.pack(side=RIGHT, fill=BOTH)
 
+        Button(text="✕", master=col, command=self.quit, font=helv36, bg=color_button).grid(column=1, sticky=W+E+N+S)
+        Button(text="⟲", master=col, command=self.flip, font=helv36, bg=color_button).grid(column=1, sticky=W+E+N+S)
+        Button(text="⧐", master=col, command=self.next_image, font=helv36, bg=color_button).grid(column=1, sticky=W+E+N+S)
+        Button(text="⧏", master=col, command=self.prev_image, font=helv36, bg=color_button).grid(column=1, sticky=W+E+N+S)
+        Button(text="...", master=col, command=self.open, font=helv36, bg=color_button).grid(column=1, sticky=W+E+N+S)
+
+
+        self.col = col
         # build gui
         self._root.mainloop()
 
@@ -55,8 +59,8 @@ class Window:
         self.pictures = get_dir_list(path)
         self.pictures = list(filter(lambda x: x[-3:] in "jpgjpegpnggif", self.pictures))
         self.index = 0
-        if len(self.pictures) > 0:
-            self.image_label = self.display_image()
+        if self.pictures:
+            self.update_image()
 
     def quit(self):
         self._root.quit()
@@ -73,22 +77,20 @@ class Window:
         path_file = get_full_path(self.path, self.pictures[self.index])
 
         if exists(path_file):
-
             img = Image.open(path_file)
-            x, y = img.size
-            if x < y:
-                size = (self.screen_height, int(self.screen_height / x * y))
-                img = img.resize(size, BICUBIC)
-                img = img.rotate(self._angle, expand=True, resample=Image.LANCZOS)
-            else:
-                size = (int(self.screen_height / y * x), self.screen_height)
-                img = img.resize(size, Image.LANCZOS)
+            img = img.rotate(self._angle, expand=True, resample=Image.LANCZOS)
 
+            x, y = img.size
+            size = (int(self.screen_height * x / y), self.screen_height)
+            img = img.resize(size, Image.LANCZOS)
+            x, y = img.size
+            if x > self.screen_width:
+                img = img.resize((self.screen_width, int(self.screen_width * y / x)), Image.LANCZOS)
 
             img = ImageTk.PhotoImage(img)
-            label = Label(image=img, master=self._root_frame, padx=10, pady=10, anchor=W)
+            label = Label(image=img, master=self.col, padx=0, pady=0, anchor=W, border=0)
             label.image = img  # keep a reference!
-            label.pack(side=RIGHT)
+            label.grid(column=0, row=0, rowspan=5)
             return label
 
         return None
@@ -104,7 +106,8 @@ class Window:
         self.update_image()
 
     def update_image(self):
-        self.image_label.destroy()
+        if self.image_label:
+            self.image_label.destroy()
         self.image_label = self.display_image()
 
 
