@@ -1,4 +1,4 @@
-
+__version__ = '1.0.0'
 from logger_default import Logger
 
 log = Logger(debug=True)
@@ -41,7 +41,7 @@ class Window:
 
         self._root.bind("<Right>", lambda x: self.update_image(1))
         self._root.bind("<Left>", lambda x: self.update_image(-1))
-        self._root.bind("<Escape>", lambda x: self.quit())
+        self._root.bind("<Escape>", lambda x: self._root.quit())
         self._root.bind_all("<MouseWheel>", lambda x: self._on_mousewheel(x))
 
         self.screen_width = self._root.winfo_screenwidth() - button_width
